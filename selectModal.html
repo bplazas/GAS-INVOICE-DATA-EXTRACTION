@@ -1,0 +1,219 @@
+<!doctype html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <style>
+            body {
+              font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+              background-color: #fff5f5;
+              color: #333;
+              margin: 0;
+              padding: 20px;
+              font-size: 16px;
+              line-height: 1.5;
+            }
+            .content {
+              background: white;
+              padding: 20px;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 15px;
+            }
+            th,
+            td {
+              padding: 10px;
+              text-align: left;
+              border-bottom: 1px solid #ddd;
+            }
+            th {
+              background: #f8f8f8;
+              font-weight: bold;
+            }
+            .name-col {
+              max-width: 180px;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .date-col {
+              width: 120px; /
+              text-align: center;
+              min-width: 100px;
+            }
+                  .check-col {
+              width: 50px;
+              text-align: center;
+            }
+      th.name-col,
+      td.name-col {
+        width: auto;
+      }
+
+
+      th.date-col,
+      td.date-col {
+        width: 120px !important;
+      }
+
+      th.check-col,
+      td.check-col {
+        width: 50px !important;
+      }
+
+      button {
+        margin-top: 20px;
+        padding: 10px 20px;
+        background: #c53030;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background: #a00d0d;
+      }
+    </style>
+
+    <script>
+      console.warn = function () {};
+      console.error = function () {};
+    </script>
+  </head>
+  <body>
+    <div class="content">
+      <h2 style="text-align: center; color: #c53030">
+        Select Invoices to Process
+      </h2>
+
+      <table id="invoiceTable">
+        <thead>
+          <tr>
+            <th class="name-col">Name</th>
+            <th class="date-col">Date Added</th>
+            <th class="check-col">Select</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr id="loadingRow">
+            <td
+              colspan="3"
+              style="
+                text-align: center;
+                padding: 20px;
+                color: #666;
+                font-style: italic;
+              "
+            >
+              Getting invoices to select...
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <button id="processButton" onclick="submitSelection()">
+        Process Selected
+      </button>
+    </div>
+
+    <script>
+            const jsonFileName = <?= jsonFileName ?>;  // Passed from server
+
+            // Load data when page opens
+            google.script.run
+              .withSuccessHandler(populateTable)
+              .withFailureHandler(showError)
+              .getInvoiceListFromJson(jsonFileName);
+
+            function populateTable(invoices) {
+              const tbody = document.getElementById('tableBody');
+                tbody.innerHTML = '';
+
+                // Remove loading message once we start populating
+                const loadingRow = document.getElementById('loadingRow');
+                if (loadingRow) loadingRow.remove();
+
+                if (!invoices || !Array.isArray(invoices) || invoices.length === 0) {
+                  tbody.innerHTML = '<tr><td colspan="3">No invoices found.</td></tr>';
+                  return;
+                }
+
+              invoices.forEach((inv, index) => {
+                // Truncate name to 12 chars + ...
+                const shortName = inv.name.length > 12 ? inv.name.substring(0, 12) + '...' : inv.name;
+
+                // Format date: e.g. 29 Dec (use locale for Colombia)
+                const date = new Date(inv.dateCreated);
+                const shortDate = date.toLocaleDateString('es-CO', {
+                  day: 'numeric',
+                  month: 'short'
+                }).replace('.', '');  // remove dot after month
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                  <td class="name-col" title="${inv.name}">${shortName}</td>
+                  <td class="date-col">${shortDate}</td>
+                  <td class="check-col">
+                    <input type="checkbox" class="selectCheck" data-index="${index}">
+                  </td>
+                `;
+                tbody.appendChild(row);
+              });
+
+              // Debug: log every checkbox change
+              document.querySelectorAll('.selectCheck').forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                  console.log('Checkbox changed:', checkbox.dataset.index, checkbox.checked ? 'checked' : 'unchecked');
+                });
+              });
+            }
+
+            function submitSelection() {
+              const checked = Array.from(document.querySelectorAll('.selectCheck:checked'));
+              const selectedIndices = checked.map(cb => parseInt(cb.dataset.index));
+
+              // NEW: Disable button immediately to prevent double-click
+                const processBtn = document.getElementById('processButton');
+                if (processBtn) {
+                  processBtn.disabled = true;
+                  processBtn.textContent = 'Processing...';  // optional nice touch
+                  processBtn.style.opacity = '0.6';  // visual cue
+                }
+
+              // Debug: log before sending (still useful)
+              console.log('Submitting selected indices to server:', selectedIndices);
+
+              if (selectedIndices.length === 0) {
+                alert('No invoices selected.');
+                return;
+              }
+
+              // Send only the indices array to server
+              google.script.run
+                .withSuccessHandler(onSuccess)
+                .withFailureHandler(showError)
+                .getSelectedIndices(selectedIndices);  // ← changed to new server function
+            }
+
+      function onSuccess(result) {
+        alert(result || 'Processing started — preview tabs opening!');
+        google.script.host.close();
+      }
+
+      function showError(err) {
+        alert('Error: ' + (err.message || 'Something went wrong. Check logs.'));
+        const processBtn = document.getElementById('processButton');
+        if (processBtn) {
+          processBtn.disabled = false;
+          processBtn.textContent = 'Process Selected';
+          processBtn.style.opacity = '1';
+        }
+      }
+    </script>
+  </body>
+</html>

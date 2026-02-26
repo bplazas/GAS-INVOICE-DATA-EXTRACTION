@@ -1,0 +1,261 @@
+<!doctype html>
+<html>
+  <head>
+    <base target="_top" />
+    <meta charset="UTF-8" />
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: #fff5f5;
+        color: #333;
+        text-align: center;
+      }
+      h1 {
+        color: #c53030;
+        margin-bottom: 20px;
+      }
+      .preview-container {
+        max-width: 90%;
+        margin: 0 auto 30px;
+        background: #f8f8f8;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      .placeholder {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      p {
+        font-size: 18px;
+        color: #555;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Invoice Preview: <?= fileName ?></h1>
+
+    <div class="preview-container">
+      <? if (thumbnailUrl) { ?>
+      <img
+        src="<?= thumbnailUrl ?>"
+        alt="Invoice thumbnail"
+        style="
+          max-width: 100%;
+          max-height: 70vh;
+          height: auto;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        "
+      />
+      <? } else { ?>
+      <p>No thumbnail available yet — Drive may generate it soon.</p>
+      <? } ?>
+    </div>
+
+    <div class="placeholder">
+      <? if (extractedData && !extractedData.error) { ?>
+      <h3>Datos Extraídos - Edita si es necesario</h3>
+
+      <table
+        style="width: 100%; text-align: left; margin: 10px 0; font-size: 16px"
+      >
+        <!-- Traceability fields - non editable -->
+        <tr style="background: #f0f0f0">
+          <td><strong>Google ID:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="GoogleId"
+              value="<?= fileId || '—' ?>"
+              readonly
+              style="
+                width: 100%;
+                padding: 8px;
+                background: #e8e8e8;
+                border: 1px solid #ccc;
+              "
+            />
+          </td>
+        </tr>
+        <tr style="background: #f0f0f0">
+          <td><strong>Nombre Archivo:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="fileName"
+              value="<?= fileName || '—' ?>"
+              readonly
+              style="
+                width: 100%;
+                padding: 8px;
+                background: #e8e8e8;
+                border: 1px solid #ccc;
+              "
+            />
+          </td>
+        </tr>
+
+        <!-- Editable invoice fields -->
+        <tr>
+          <td><strong>NIT Emisor:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="nitEmisor"
+              value="<?= extractedData.nitEmisor || '' ?>"
+              style="width: 100%; padding: 8px"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td><strong>NIT Receptor:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="nitReceptor"
+              value="<?= extractedData.nitReceptor || '' ?>"
+              style="width: 100%; padding: 8px"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Número Factura:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="numeroFactura"
+              value="<?= extractedData.numeroFactura || '' ?>"
+              style="width: 100%; padding: 8px"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Fecha Expedición:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="fechaExpedicion"
+              value="<?= extractedData.fechaExpedicion || '' ?>"
+              style="width: 100%; padding: 8px"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Fecha Vencimiento:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="fechaVencimiento"
+              value="<?= extractedData.fechaVencimiento || '' ?>"
+              style="width: 100%; padding: 8px"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Subtotal:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="subtotal"
+              value="<?= extractedData.subtotal || '' ?>"
+              style="width: 100%; padding: 8px"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td><strong>IVA:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="iva"
+              value="<?= extractedData.iva || '' ?>"
+              style="width: 100%; padding: 8px"
+            />
+          </td>
+        </tr>
+        <tr>
+          <td><strong>Total:</strong></td>
+          <td>
+            <input
+              type="text"
+              id="total"
+              value="<?= extractedData.total || '' ?>"
+              style="width: 100%; padding: 8px"
+            />
+          </td>
+        </tr>
+      </table>
+
+      <div style="margin-top: 20px">
+        <button onclick="approveInvoice()">Guardar y Aprobar</button>
+        <button
+          onclick="rejectInvoice()"
+          style="margin-left: 20px; background: #666"
+        >
+          Rechazar
+        </button>
+      </div>
+      <? } else { ?>
+      <p>Error extracting data or no data available.</p>
+      <? } ?>
+    </div>
+
+    <script>
+      function approveInvoice() {
+        console.log("Approve button pressed - collecting final data...");
+
+        const formData = {
+          GoogleId: document.getElementById("GoogleId").value.trim(),
+          fileName: document.getElementById("fileName").value.trim(),
+          nitEmisor: document.getElementById("nitEmisor").value.trim(),
+          nitReceptor: document.getElementById("nitReceptor").value.trim(),
+          numeroFactura: document.getElementById("numeroFactura").value.trim(),
+          fechaExpedicion: document
+            .getElementById("fechaExpedicion")
+            .value.trim(),
+          fechaVencimiento: document
+            .getElementById("fechaVencimiento")
+            .value.trim(),
+          subtotal: document.getElementById("subtotal").value.trim(),
+          iva: document.getElementById("iva").value.trim(),
+          total: document.getElementById("total").value.trim(),
+        };
+
+        console.log("Sending to server:", formData);
+
+        google.script.run
+          .withSuccessHandler(onSaveSuccess)
+          .withFailureHandler(onSaveFailure)
+          .saveApprovedInvoice(formData);
+      }
+
+      function onSaveSuccess(response) {
+        if (response.success) {
+          alert(response.message); // or nicer toast later
+          google.script.host.close();
+        } else {
+          alert("Algo salió mal: " + response.message);
+        }
+      }
+
+      function onSaveFailure(error) {
+        alert("Error de conexión: " + error.message);
+        console.error(error);
+      }
+
+      function rejectInvoice() {
+        console.log("Reject button pressed");
+      }
+    </script>
+  </body>
+</html>

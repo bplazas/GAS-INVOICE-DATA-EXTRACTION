@@ -1,0 +1,41 @@
+# clasp / Apps Script metadata - never commit scriptId!
+.clasp.json
+
+# VS Code workspace files (keep local)
+.vscode/
+*.code-workspace
+
+# Node / npm (if you add any later)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Temp / build files
+*.log
+.DS_Store
+Thumbs.db
+
+# Optional: if you experiment with TypeScript later
+*.tsbuildinfo
+
+# .txt files
+*.txt
+
+# .gsheet files
+*.gsheet
+
+# pdf files
+*.pdf
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Optional: if you create local test data or scratch files
+# test-data/
+# *.local.json
+
+# Project-specific config & generated runtime files
+# (these are recreated on each run or customized per deployment)
+# projectData.json
+# listVerInvWOProc.json
